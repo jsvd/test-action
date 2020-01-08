@@ -25,7 +25,7 @@ def find_pr_version
 end
 
 def fetch_git_versions
-  `git tag -l`.split("\n").map {|version| version.tr("v", "").strip }
+  `git tag --list 'v*'`.split("\n").map {|version| version.tr("v", "").strip }
 end
 
 def find_version_changelog_entry(version)
