@@ -31,7 +31,7 @@ def compute_changelog_suggestion
 end
 
 def pr_edits_version_files?
-  `git diff --name-status VERSION *.gemspec version`.empty? == false
+  `git diff --name-status *.gemspec VERSION version`.empty? == false
 end
 
 def pr_updates_changelog?
