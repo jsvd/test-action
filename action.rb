@@ -1,23 +1,12 @@
 require "json"
 require "rubygems"
 
-# Each Action has an event passed to it.
-=begin
-event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
-puts "event inspect:"
-puts event.inspect
-
-puts "\n**printing environment"
-puts ENV.inspect
-
-puts "\nlisting files"
-puts `ls`
-=end
 BASE_REF = ENV['GITHUB_BASE_REF']
 unless BASE_REF
   $stderr.puts "ERROR: GITHUB_BASE_REF environment variable not found. Aborting.."
   exit(1)
 end
+
 def find_pr_version
   gemspec_path = Dir.glob("*.gemspec").first
   spec = Gem::Specification::load(gemspec_path)
@@ -41,14 +30,55 @@ def compute_changelog_suggestion
   end
 end
 
+def pr_edits_version_files?
+  `git diff --name-status VERSION *.gemspec version`.empty? == false
+end
+
+def pr_updates_changelog?
+  `git diff --name-status CHANGELOG.md`.empty? == false
+end
+
+def rubygem_published?
+  gemspec_path = Dir.glob("*.gemspec").first
+  spec = Gem::Specification::load(gemspec_path)
+  gem_name = spec.name
+  version = spec.version.to_s
+  puts spec.platform.to_s
+  platform = spec.platform.to_s == "java" ? "-java" : ""
+  url = "https://rubygems.org/gems/#{gem_name}/versions/#{version}#{platform}"
+  puts url
+  result = `curl -s -I #{url}`
+  first_line = result.split("\n").first
+  _, status, _ = first_line.split(" ")
+  puts status
+  status == "200"
+end
+
+unless pr_edits_version_files?
+  $stderr.puts "ERROR: This Pull Request doesn't modify the gemspec or version files (if existent)."
+  $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged"
+  exit(1)
+end
+
 pr_version = find_pr_version()
 puts "Plugin version in this PR is: #{pr_version}"
 
 published_versions = fetch_git_versions()
 
 if published_versions.include?(pr_version)
-  $stderr.puts "ERROR: Version #{pr_version} has already been published to Rubygems.org"
-  $stderr.puts "ERROR: Please bump the version to speed up plugin publishing after this PR is merged"
+  $stderr.puts "ERROR: A git tag \"v#{pr_version}\" already exists for version #{pr_version}"
+  $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged"
+  exit(1)
+end
+
+if rubygem_published?
+  $stderr.puts "ERROR: Version \"#{pr_version}\" is already published on Rubygems.org"
+  $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged"
+  exit(1)
+end
+
+unless pr_updates_changelog?
+  $stderr.puts "ERROR: This Pull Request bumps the version but doesn't update the CHANGELOG.md file"
   exit(1)
 end
 
