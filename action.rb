@@ -33,7 +33,7 @@ end
 def file_changed?(path)
   puts `git status`
   puts `git branch -l`
-  `git diff --name-status #{BASE_REF} -- #{path}`.empty? == false
+  `git diff --name-status origin/#{BASE_REF} -- #{path}`.empty? == false
 end
 
 def pr_edits_version_files?
