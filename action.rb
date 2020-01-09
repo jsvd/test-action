@@ -18,7 +18,7 @@ end
 
 puts ENV.inspect
 
-BASE_REF = IS_PR ? ENV['GITHUB_BASE_REF'] : event["before"]
+BASE_REF = IS_PR ? "origin/#{ENV['GITHUB_BASE_REF']}" : event["before"]
 
 unless BASE_REF
   $stderr.puts "ERROR: Could not determine BASE_REF for this change. Aborting.."
