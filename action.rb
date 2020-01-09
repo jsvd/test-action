@@ -4,6 +4,8 @@ require "rubygems"
 event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
 puts event.inspect
 
+puts ENV.inspect
+
 BASE_REF = ENV['GITHUB_BASE_REF']
 unless BASE_REF
   $stderr.puts "ERROR: GITHUB_BASE_REF environment variable not found. Aborting.."
