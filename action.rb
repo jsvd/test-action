@@ -31,7 +31,13 @@ def compute_changelog_suggestion
 end
 
 def pr_edits_version_files?
-  `git diff --name-status *.gemspec VERSION version`.empty? == false
+  if File.exist?("VERSION")
+    return `git diff --name-status VERSION`.empty? == false
+  elsif File.exist?("version")
+    return `git diff --name-status version`.empty? == false
+  else
+    return `git diff --name-status *.gemspec`.empty? == false
+  end
 end
 
 def pr_updates_changelog?
