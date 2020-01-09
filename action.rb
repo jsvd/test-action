@@ -4,15 +4,30 @@ require "rubygems"
 event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
 puts event.inspect
 
+is_pr = ENV['GITHUB_EVENT_NAME'] == "pull_request"
+is_push = ENV['GITHUB_EVENT_NAME'] == "push"
+
+puts "Action is PR: #{is_pr}"
+puts "Action is push: #{is_push}"
+
+def followup_notice
+  if is_pr
+    $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged."
+  else
+    $stderr.puts "Please bump the version to speed up plugin publishing in a new pull request."
+  end
+end
+
 puts ENV.inspect
 
-BASE_REF = ENV['GITHUB_BASE_REF']
+BASE_REF = is_pr ? ENV['GITHUB_BASE_REF'] : event["before"]
+
 unless BASE_REF
-  $stderr.puts "ERROR: GITHUB_BASE_REF environment variable not found. Aborting.."
+  $stderr.puts "ERROR: Could not determine BASE_REF for this change. Aborting.."
   exit(1)
 end
 
-def find_pr_version
+def find_gemspec_version
   gemspec_path = Dir.glob("*.gemspec").first
   spec = Gem::Specification::load(gemspec_path)
   spec.version.to_s
@@ -29,7 +44,7 @@ end
 def compute_changelog_suggestion
   commits = `git log #{BASE_REF}.. --format=%B`.split("\n")
   if commits.empty?
-    "  - could not find commits between this Pull Request and the \"#{BASE_REF}\" branch."
+    "  - could not find commits between this change the \"#{BASE_REF}\" reference."
   else
     commits.map {|commit| "  - #{commit}" }
   end
@@ -41,7 +56,7 @@ def file_changed?(path)
   `git diff --name-status origin/#{BASE_REF} -- #{path}`.empty? == false
 end
 
-def pr_edits_version_files?
+def change_edits_version_files?
   if File.exist?("VERSION")
     return file_changed?("VERSION")
   elsif File.exist?("version")
@@ -51,7 +66,7 @@ def pr_edits_version_files?
   end
 end
 
-def pr_updates_changelog?
+def change_updates_changelog?
   file_changed?("CHANGELOG.md")
 end
 
@@ -69,43 +84,47 @@ def rubygem_published?
   status == "200"
 end
 
-unless pr_edits_version_files?
-  $stderr.puts "ERROR: This Pull Request doesn't modify the gemspec or version files (if existent)."
-  $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged"
+unless change_edits_version_files?
+  $stderr.puts "ERROR: This change doesn't modify the gemspec or version files (if existent)."
+  followup_notice()
   exit(1)
 end
 
-pr_version = find_pr_version()
-puts "Plugin version in this PR is: #{pr_version}"
+change_version = find_gemspec_version()
+puts "Plugin version in the gemspec is: #{change_version}"
 
 published_versions = fetch_git_versions()
 
-if published_versions.include?(pr_version)
-  $stderr.puts "ERROR: A git tag \"v#{pr_version}\" already exists for version #{pr_version}"
-  $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged"
+if published_versions.include?(change_version)
+  $stderr.puts "ERROR: A git tag \"v#{change_version}\" already exists for version #{change_version}"
+  followup_notice()
   exit(1)
 end
 
 if rubygem_published?
-  $stderr.puts "ERROR: Version \"#{pr_version}\" is already published on Rubygems.org"
-  $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged"
+  $stderr.puts "ERROR: Version \"#{change_version}\" is already published on Rubygems.org"
+  followup_notice()
   exit(1)
 end
 
-unless pr_updates_changelog?
-  $stderr.puts "ERROR: This Pull Request bumps the version but doesn't update the CHANGELOG.md file"
+unless change_updates_changelog?
+  $stderr.puts "ERROR: This change bumps the version but doesn't update the CHANGELOG.md file"
   exit(1)
 end
 
-unless match = find_version_changelog_entry(pr_version)
-  $stderr.puts "ERROR: We were unable to find a CHANGELOG.md entry for version #{pr_version}"
+unless match = find_version_changelog_entry(change_version)
+  $stderr.puts "ERROR: We were unable to find a CHANGELOG.md entry for version #{change_version}"
   $stderr.puts "Please add a new entry to the top of CHANGELOG.md similar to:\n\n"
-  $stderr.puts "## #{pr_version}"
+  $stderr.puts "## #{change_version}"
   $stderr.puts compute_changelog_suggestion()
   exit(1)
 else
-  puts "Found changelog entry for version #{pr_version}:"
+  puts "Found changelog entry for version #{change_version}:"
   puts match.to_s
 end
 
-puts "We're all set up for the version bump. Thank you!"
+if is_pr
+  puts "We're all set up for the version bump. Thank you!"
+else
+  puts "We're all set up! Starting publishing now"
+end
