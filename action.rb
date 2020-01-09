@@ -2,7 +2,6 @@ require "json"
 require "rubygems"
 
 event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
-puts event.inspect
 
 IS_PR = (ENV['GITHUB_EVENT_NAME'] == "pull_request")
 
@@ -15,8 +14,6 @@ def followup_notice
     $stderr.puts "Please bump the version to speed up plugin publishing in a new pull request."
   end
 end
-
-puts ENV.inspect
 
 BASE_REF = IS_PR ? "origin/#{ENV['GITHUB_BASE_REF']}" : event["before"]
 
@@ -49,8 +46,6 @@ def compute_changelog_suggestion
 end
 
 def file_changed?(path)
-  puts `git status`
-  puts `git branch -l`
   `git diff --name-status #{BASE_REF} -- #{path}`.empty? == false
 end
 
