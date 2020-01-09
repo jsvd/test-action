@@ -4,14 +4,12 @@ require "rubygems"
 event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
 puts event.inspect
 
-is_pr = ENV['GITHUB_EVENT_NAME'] == "pull_request"
-is_push = ENV['GITHUB_EVENT_NAME'] == "push"
+IS_PR = (ENV['GITHUB_EVENT_NAME'] == "pull_request")
 
-puts "Action is PR: #{is_pr}"
-puts "Action is push: #{is_push}"
+puts "Action is PR: #{IS_PR}"
 
 def followup_notice
-  if is_pr
+  if IS_PR
     $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged."
   else
     $stderr.puts "Please bump the version to speed up plugin publishing in a new pull request."
@@ -20,7 +18,7 @@ end
 
 puts ENV.inspect
 
-BASE_REF = is_pr ? ENV['GITHUB_BASE_REF'] : event["before"]
+BASE_REF = IS_PR ? ENV['GITHUB_BASE_REF'] : event["before"]
 
 unless BASE_REF
   $stderr.puts "ERROR: Could not determine BASE_REF for this change. Aborting.."
@@ -123,7 +121,7 @@ else
   puts match.to_s
 end
 
-if is_pr
+if IS_PR
   puts "We're all set up for the version bump. Thank you!"
 else
   puts "We're all set up! Starting publishing now"
