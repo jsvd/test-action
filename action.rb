@@ -31,7 +31,7 @@ def compute_changelog_suggestion
 end
 
 def file_changed?(path)
-  `git diff #{BASE_REF} --name-status #{path}`.empty? == false
+  `git diff --name-status #{BASE_REF} #{path}`.empty? == false
 end
 
 def pr_edits_version_files?
