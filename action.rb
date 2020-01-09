@@ -31,6 +31,8 @@ def compute_changelog_suggestion
 end
 
 def file_changed?(path)
+  puts `git status`
+  puts `git branch -l`
   `git diff --name-status #{BASE_REF} -- #{path}`.empty? == false
 end
 
