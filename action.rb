@@ -30,33 +30,35 @@ def compute_changelog_suggestion
   end
 end
 
+def file_changed?(path)
+  `git diff #{BASE_REF} --name-status #{path}`.empty? == false
+end
+
 def pr_edits_version_files?
   if File.exist?("VERSION")
-    return `git diff --name-status VERSION`.empty? == false
+    return file_changed?("VERSION")
   elsif File.exist?("version")
-    return `git diff --name-status version`.empty? == false
+    return file_changed?("version")
   else
-    return `git diff --name-status *.gemspec`.empty? == false
+    return file_changed?("*.gemspec")
   end
 end
 
 def pr_updates_changelog?
-  `git diff --name-status CHANGELOG.md`.empty? == false
+  file_changed?("CHANGELOG.md")
 end
 
+# TODO refactor rubygem_published?
 def rubygem_published?
   gemspec_path = Dir.glob("*.gemspec").first
   spec = Gem::Specification::load(gemspec_path)
   gem_name = spec.name
   version = spec.version.to_s
-  puts spec.platform.to_s
   platform = spec.platform.to_s == "java" ? "-java" : ""
   url = "https://rubygems.org/gems/#{gem_name}/versions/#{version}#{platform}"
-  puts url
   result = `curl -s -I #{url}`
   first_line = result.split("\n").first
   _, status, _ = first_line.split(" ")
-  puts status
   status == "200"
 end
 
