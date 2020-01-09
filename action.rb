@@ -9,16 +9,16 @@ puts "Action is PR: #{IS_PR}"
 
 def followup_notice
   if IS_PR
-    $stderr.puts "Please bump the version to speed up plugin publishing after this PR is merged."
+    $stderr.puts "⚠️  Please bump the version to speed up plugin publishing after this PR is merged."
   else
-    $stderr.puts "Please bump the version to speed up plugin publishing in a new pull request."
+    $stderr.puts "⚠️  Please bump the version to speed up plugin publishing in a new pull request."
   end
 end
 
 BASE_REF = IS_PR ? "origin/#{ENV['GITHUB_BASE_REF']}" : event["before"]
 
 unless BASE_REF
-  $stderr.puts "ERROR: Could not determine BASE_REF for this change. Aborting.."
+  $stderr.puts "❌ Could not determine BASE_REF for this change. Aborting.."
   exit(1)
 end
 
@@ -78,7 +78,7 @@ def rubygem_published?
 end
 
 unless change_edits_version_files?
-  $stderr.puts "ERROR: This change doesn't modify the gemspec or version files (if existent)."
+  $stderr.puts "❌ This change doesn't modify the gemspec or version files (if existent)."
   followup_notice()
   exit(1)
 end
@@ -89,35 +89,35 @@ puts "Plugin version in the gemspec is: #{change_version}"
 published_versions = fetch_git_versions()
 
 if published_versions.include?(change_version)
-  $stderr.puts "ERROR: A git tag \"v#{change_version}\" already exists for version #{change_version}"
+  $stderr.puts "❌ A git tag \"v#{change_version}\" already exists for version #{change_version}"
   followup_notice()
   exit(1)
 end
 
 if rubygem_published?
-  $stderr.puts "ERROR: Version \"#{change_version}\" is already published on Rubygems.org"
+  $stderr.puts "❌ Version \"#{change_version}\" is already published on Rubygems.org"
   followup_notice()
   exit(1)
 end
 
 unless change_updates_changelog?
-  $stderr.puts "ERROR: This change bumps the version but doesn't update the CHANGELOG.md file"
+  $stderr.puts "❌ This change bumps the version but doesn't update the CHANGELOG.md file"
   exit(1)
 end
 
 unless match = find_version_changelog_entry(change_version)
-  $stderr.puts "ERROR: We were unable to find a CHANGELOG.md entry for version #{change_version}"
+  $stderr.puts "❌ We were unable to find a CHANGELOG.md entry for version #{change_version}"
   $stderr.puts "Please add a new entry to the top of CHANGELOG.md similar to:\n\n"
   $stderr.puts "## #{change_version}"
   $stderr.puts compute_changelog_suggestion()
   exit(1)
 else
-  puts "Found changelog entry for version #{change_version}:"
+  puts "✅ Found changelog entry for version #{change_version}:"
   puts match.to_s
 end
 
 if IS_PR
-  puts "We're all set up for the version bump. Thank you!"
+  puts "✅ We're all set up for the version bump. Thank you!"
 else
-  puts "We're all set up! Starting publishing now"
+  puts "✅ We're all set up! Starting publishing now"
 end
