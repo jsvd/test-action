@@ -19,33 +19,6 @@ def find_version_changelog_entry(version)
   IO.read("CHANGELOG.md").match(/## #{version}\n\s+.+$/)
 end
 
-def compute_changelog_suggestion
-  commits = `git log #{BASE_REF}.. --format=%B`.split("\n")
-  if commits.empty?
-    "  - could not find commits between this change the \"#{BASE_REF}\" reference."
-  else
-    commits.map {|commit| "  - #{commit}" }
-  end
-end
-
-def file_changed?(path)
-  `git diff --name-status #{BASE_REF} -- #{path}`.empty? == false
-end
-
-def change_edits_version_files?
-  if File.exist?("VERSION")
-    return file_changed?("VERSION")
-  elsif File.exist?("version")
-    return file_changed?("version")
-  else
-    return file_changed?("*.gemspec")
-  end
-end
-
-def change_updates_changelog?
-  file_changed?("CHANGELOG.md")
-end
-
 # TODO refactor rubygem_published?
 def rubygem_published?
   gemspec_path = Dir.glob("*.gemspec").first
@@ -62,23 +35,10 @@ end
 
 event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
 
-puts ENV['GITHUB_EVENT_NAME']
-exit(1)
+event_name = ENV['GITHUB_EVENT_NAME']
+puts ENV.inspect
 
-puts "Action is PR: #{IS_PR}"
-
-BASE_REF = IS_PR ? "origin/#{ENV['GITHUB_BASE_REF']}" : event["before"]
-
-unless BASE_REF
-  $stderr.puts "❌ Could not determine BASE_REF for this change. Aborting.."
-  exit(1)
-end
-
-unless change_edits_version_files?
-  $stderr.puts "❌ This change doesn't modify the gemspec or version files (if existent)."
-  followup_notice()
-  exit(1)
-end
+puts "Action is: #{event_name}"
 
 change_version = find_gemspec_version()
 puts "Plugin version in the gemspec is: #{change_version}"
@@ -97,24 +57,15 @@ if rubygem_published?
   exit(1)
 end
 
-unless change_updates_changelog?
-  $stderr.puts "❌ This change bumps the version but doesn't update the CHANGELOG.md file"
-  exit(1)
-end
-
 unless match = find_version_changelog_entry(change_version)
   $stderr.puts "❌ We were unable to find a CHANGELOG.md entry for version #{change_version}"
   $stderr.puts "Please add a new entry to the top of CHANGELOG.md similar to:\n\n"
   $stderr.puts "## #{change_version}"
-  $stderr.puts compute_changelog_suggestion()
+  $stderr.puts "  - Change here [#number](link)"
   exit(1)
 else
   puts "✅ Found changelog entry for version #{change_version}:"
   puts match.to_s
 end
 
-if IS_PR
-  puts "✅ We're all set up for the version bump. Thank you!"
-else
-  puts "✅ We're all set up! Starting publishing now"
-end
+puts "✅ We're all set up! Starting publishing now"
