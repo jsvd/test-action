@@ -1,4 +1,4 @@
-FROM ruby:2.7.0
+FROM logstash:7.14.0
 
 LABEL "com.github.actions.name"="Verify version bump in Logstash Plugin PR"
 LABEL "com.github.actions.description"="Example code for building a GitHub Action with the language you love, Ruby."

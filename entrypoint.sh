@@ -2,4 +2,5 @@
 
 set -e
 
-sh -c "ruby /action.rb $*"
+sh -c "ls -lha"
+sh -c "bin/ruby /action.rb $*"

@@ -41,31 +41,31 @@ puts ENV.inspect
 puts "Action is: #{event_name}"
 
 puts `ls -lha`
-change_version = find_gemspec_version()
-puts "Plugin version in the gemspec is: #{change_version}"
+gemspec_version = find_gemspec_version()
+puts "Plugin version in the gemspec is: #{gemspec_version}"
 
 published_versions = fetch_git_versions()
 
-if published_versions.include?(change_version)
-  $stderr.puts "❌ A git tag \"v#{change_version}\" already exists for version #{change_version}"
+if published_versions.include?(gemspec_version)
+  $stderr.puts "❌ A git tag \"v#{gemspec_version}\" already exists for version #{gemspec_version}"
   followup_notice()
   exit(1)
 end
 
 if rubygem_published?
-  $stderr.puts "❌ Version \"#{change_version}\" is already published on Rubygems.org"
+  $stderr.puts "❌ Version \"#{gemspec_version}\" is already published on Rubygems.org"
   followup_notice()
   exit(1)
 end
 
-unless match = find_version_changelog_entry(change_version)
-  $stderr.puts "❌ We were unable to find a CHANGELOG.md entry for version #{change_version}"
+unless match = find_version_changelog_entry(gemspec_version)
+  $stderr.puts "❌ We were unable to find a CHANGELOG.md entry for version #{gemspec_version}"
   $stderr.puts "Please add a new entry to the top of CHANGELOG.md similar to:\n\n"
-  $stderr.puts "## #{change_version}"
+  $stderr.puts "## #{gemspec_version}"
   $stderr.puts "  - Change here [#number](link)"
   exit(1)
 else
-  puts "✅ Found changelog entry for version #{change_version}:"
+  puts "✅ Found changelog entry for version #{gemspec_version}:"
   puts match.to_s
 end
 
