@@ -40,6 +40,7 @@ puts ENV.inspect
 
 puts "Action is: #{event_name}"
 
+puts `ls -lha`
 change_version = find_gemspec_version()
 puts "Plugin version in the gemspec is: #{change_version}"
 
