@@ -1,25 +1,8 @@
 require "json"
 require "rubygems"
 
-event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
-
-IS_PR = (ENV['GITHUB_EVENT_NAME'] == "pull_request")
-
-puts "Action is PR: #{IS_PR}"
-
 def followup_notice
-  if IS_PR
-    $stderr.puts "⚠️  Please bump the version to speed up plugin publishing after this PR is merged."
-  else
-    $stderr.puts "⚠️  Please bump the version to speed up plugin publishing in a new pull request."
-  end
-end
-
-BASE_REF = IS_PR ? "origin/#{ENV['GITHUB_BASE_REF']}" : event["before"]
-
-unless BASE_REF
-  $stderr.puts "❌ Could not determine BASE_REF for this change. Aborting.."
-  exit(1)
+  $stderr.puts "⚠️  Please bump the version to speed up plugin publishing in a new pull request."
 end
 
 def find_gemspec_version
@@ -75,6 +58,20 @@ def rubygem_published?
   first_line = result.split("\n").first
   _, status, _ = first_line.split(" ")
   status == "200"
+end
+
+event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
+
+puts ENV['GITHUB_EVENT_NAME']
+exit(1)
+
+puts "Action is PR: #{IS_PR}"
+
+BASE_REF = IS_PR ? "origin/#{ENV['GITHUB_BASE_REF']}" : event["before"]
+
+unless BASE_REF
+  $stderr.puts "❌ Could not determine BASE_REF for this change. Aborting.."
+  exit(1)
 end
 
 unless change_edits_version_files?
